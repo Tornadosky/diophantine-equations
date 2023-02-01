@@ -74,3 +74,61 @@ class Return(Parser):
 class Fail(Parser):
     def parse(self, inp):
         return []
+
+########################################
+## Derived primitives
+##
+## Below this line, no more implementations
+## of the "parse" method!
+########################################
+
+class ParseSome(Parser):
+    def __init__(self, parser):
+        self.parser = parser >> (lambda x: \
+                                (ParseSome(parser) ^ Return([])) >> (lambda xs: \
+                                 Return(Parser.cons(x, xs))))
+
+class ParseIf(Parser):
+    def __init__(self, pred):
+        self.pred   = pred
+        self.parser = ParseItem() >> (lambda c: \
+                                      Return(c) if self.pred(c) else Fail())
+
+class ParseMany(Parser):
+    def __init__(self, parser):
+        self.parser = ParseSome(parser) ^ Return([])
+
+class ParseNat(Parser):
+    def __init__(self):
+        """
+        >>> ParseNat().parse("00089abc")
+        [(89, 'abc')]
+        >>> ParseNat().parse("a89b")
+        []
+        >>> ParseNat().parse("-89")
+        []
+        """
+        self.parser = ParseSome(ParseDigit()) >> (lambda ds: \
+                                                  Return(int(ds)))
+
+class ParseChar(Parser):
+    """
+    >>> ParseChar('-').parse("-89abc")
+    [('-', '89abc')]
+    >>> ParseChar('a').parse("89")
+    []
+    >>> ParseChar('a').parse("abc")
+    [('a', 'bc')]
+    """
+    def __init__(self, c):
+        self.parser = ParseIf(lambda x: c == x)
+        
+class ParseDigit(Parser):
+    """
+    >>> ParseDigit().parse("89abc")
+    [('8', '9abc')]
+    >>> ParseDigit().parse("a89b")
+    []
+    """
+    def __init__(self):
+        self.parser = ParseIf(lambda c: c in "0123456789")
