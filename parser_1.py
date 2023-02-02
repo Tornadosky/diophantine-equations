@@ -132,3 +132,34 @@ class ParseDigit(Parser):
     """
     def __init__(self):
         self.parser = ParseIf(lambda c: c in "0123456789")
+
+# Problem specific combinators        
+
+class ParseInt(Parser):
+    def __init__(self):
+        """
+        >>> ParseInt().parse("89abc")
+        [(89, 'abc')]
+        >>> ParseInt().parse("-007xyz")
+        [(-7, 'xyz')]
+        >>> ParseInt().parse("abc")
+        []
+        """
+        # if inp starts with minus, then check that the rest is a natural number
+        # else, check if inp is a natural number
+        # else, fail.
+        self.parser = (ParseChar('-') >> (lambda _: \
+                                         ParseNat() >> (lambda n: \
+                                                        Return(-n)))) ^ ParseNat()
+
+class ParseSpace(Parser):
+    def __init__(self):
+        self.parser = ParseMany(ParseIf(str.isspace)) >> (lambda _:
+        Return([]))
+
+class ParseToken(Parser):
+    def __init__(self, parser):
+        self.parser = ParseSpace() >> (lambda _:
+        parser >> (lambda x:
+        ParseSpace() >> (lambda _:
+        Return(x))))
