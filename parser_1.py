@@ -163,3 +163,26 @@ class ParseToken(Parser):
         parser >> (lambda x:
         ParseSpace() >> (lambda _:
         Return(x))))
+
+class ParseInteger(Parser):
+    def __init__(self):
+        self.parser = ParseToken(ParseInt())
+
+class ParseString(Parser):
+    def __init__(self, string):
+        self.string = string
+        self.parser = ParseChar(self.string[0]) >> (lambda x:
+                      ParseString(self.string[1:]) >> (lambda xs:
+                      Return(Parser.cons(x, xs)))) if self.string else Return('')
+
+class ParseSymbol(Parser):
+    def __init__(self, string):
+        self.parser = ParseToken(ParseString(string))
+
+class ParseLower(Parser):
+    def __init__(self):
+        self.parser = ParseIf(str.islower)
+
+class ParseAlphanum(Parser):
+    def __init__(self):
+        self.parser = ParseIf(str.isalnum)
