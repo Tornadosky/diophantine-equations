@@ -186,3 +186,65 @@ class ParseLower(Parser):
 class ParseAlphanum(Parser):
     def __init__(self):
         self.parser = ParseIf(str.isalnum)
+
+class ParseIdent(Parser):
+    def __init__(self):
+        self.parser = ParseLower() >> (lambda x:
+        ParseMany(ParseAlphanum()) >> (lambda xs:
+        Return(Parser.cons(x, xs))))
+
+class ParseIdentifier(Parser):
+    def __init__(self):
+        self.parser = ParseToken(ParseIdent())
+
+# Parse expression with variables
+
+class ParseSInteger(Parser):
+    """
+    >>> res = result(ParseSInteger().parse("89abc"))
+    >>> print(res)
+    89
+    >>> res = result(ParseSInteger().parse("-007xyz"))
+    >>> print(res)
+    -7
+    >>> ParseSInteger().parse("abc")
+    []
+    """
+    def __init__(self):
+        self.parser = ParseInteger() >> (lambda n: Return(Con(n)))
+
+class ParseSIdentifier(Parser):
+    """
+    >>> res = result(ParseSIdentifier().parse("x4  32"))
+    >>> print(res)
+    x4
+    >>> res = result(ParseSIdentifier().parse("x*4= *5"))
+    >>> print(res)
+    x
+    >>> res = result(ParseSIdentifier().parse("xop*4= y*5"))
+    >>> print(res)
+    xop
+    >>> ParseSIdentifier().parse("3x")
+    []
+    """
+    def __init__(self):
+        self.parser = ParseIdentifier() >> (lambda var: Return(MyVar(var)))
+
+class ParseSFactor(Parser):
+    """
+    >>> res = result(ParseSFactor().parse("x2 *2abc"))
+    >>> print(res)
+    x2
+    >>> res = result(ParseSFactor().parse("(y + 2) * 2"))
+    >>> print(res)
+    (y + 2)
+    >>> res = result(ParseSFactor().parse("(y + 2) * 2"))
+    >>> print(res)
+    (y + 2)
+    """
+    def __init__(self):
+        self.parser = ParseSInteger() ^ ParseSIdentifier() ^ \
+                      (ParseSymbol("(") >> (lambda _:
+                      ParseSExpr() >> (lambda e:
+                      ParseSymbol(")") >> (lambda _:
+                      Return(e)))))
