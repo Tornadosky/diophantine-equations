@@ -1,4 +1,5 @@
 from symbolic import *
+import doctest
 
 result = lambda p: p[0][0]
 rest   = lambda p: p[0][1]
@@ -248,3 +249,52 @@ class ParseSFactor(Parser):
                       ParseSExpr() >> (lambda e:
                       ParseSymbol(")") >> (lambda _:
                       Return(e)))))
+    
+    class ParseSTerm(Parser):
+    """
+    >>> res = result(ParseSTerm().parse("x *2abc"))
+    >>> print(res)
+    (x * 2)
+    >>> res = result(ParseSTerm().parse("2*  (y + 2) * 2"))
+    >>> print(res)
+    (2 * ((y + 2) * 2))
+    """
+    def __init__(self):
+        self.parser = (ParseSFactor() >> (lambda n:
+                       ParseSymbol("*") >> (lambda _:
+                       ParseSTerm() >> (lambda m:
+                       Return(Times(n, m)))))) ^ ParseSFactor()
+
+class ParseSExpr(Parser):
+    """
+    >>> res = result(ParseSExpr().parse("x"))
+    >>> print(res)
+    x
+    >>> res = result(ParseSExpr().parse("x + 2*y"))
+    >>> print(res)
+    (x + (2 * y))
+    >>> res = result(ParseSExpr().parse("15 + x * x"))
+    >>> print(res)
+    (15 + (x * x))
+    >>> res = result(ParseSExpr().parse("(x - y) - z"))
+    >>> print(res)
+    ((x - y) - z)
+    >>> res = result(ParseSExpr().parse("x - y - z"))
+    >>> print(res)
+    (x - (y - z))
+    >>> res = result(ParseSExpr().parse("-x-y"))
+    >>> print(res)
+    (0 - (x - y))
+    """
+    def __init__(self):
+        self.parser = (ParseSTerm() >> (lambda n:
+                       ParseSymbol("+") >> (lambda _:
+                       ParseSExpr() >> (lambda m:
+                       Return(MyPlus(n, m)))))) ^ \
+                            ParseSTerm() >> (lambda n:
+                            ParseSymbol("-") >> (lambda _:
+                            ParseSExpr() >> (lambda m:
+                            Return(MyMinus(n, m))))) ^ \
+                                ParseSymbol("-") >> (lambda _:
+                                ParseSExpr() >> (lambda m:
+                                Return(MyMinus(Con(0), m)))) ^ ParseSTerm()
