@@ -298,3 +298,72 @@ class ParseSExpr(Parser):
                                 ParseSymbol("-") >> (lambda _:
                                 ParseSExpr() >> (lambda m:
                                 Return(MyMinus(Con(0), m)))) ^ ParseSTerm()
+    
+    class ParseEqu(Parser):
+    """
+    >>> ParseEqu().parse(" =y")
+    []
+    >>> ParseEqu().parse("x == 1")
+    []
+    >>> res = result(ParseEqu().parse("2*x   +y = 1asav"))
+    >>> print(res)
+    (((2 * x) + y) == 1)
+    >>> res = result(ParseEqu().parse("x = 1"))
+    >>> print(res)
+    (x == 1)
+    >>> res = result(ParseEqu().parse("x = ab1"))
+    >>> print(res)
+    (x == ab1)
+    """
+    def __init__(self):
+        self.parser = (ParseSExpr() >> (lambda n:
+                       ParseSymbol("=") >> (lambda _:
+                       ParseSExpr() >> (lambda m:
+                       Return(Equal(n, m))))))
+
+class ParseEquSys(Parser):
+    def __init__(self):
+        self.parser = (ParseEqu() >> (lambda n:
+                       ParseSymbol(",") >> (lambda _:
+                       ParseEquSys() >> (lambda m:
+                       Return(Parser.consType(n, m, [Equal])))))) ^ \
+                            ParseEqu() >> (lambda n:
+                            Return([n]))
+
+class ParseConstr(Parser):
+    """
+    >>> res = result(ParseConstr().parse("x< y"))
+    >>> print(res)
+    (x < y)
+    >>> res = result(ParseConstr().parse("x*2 + 4 * y*y > 1"))
+    >>> print(res)
+    (((x * 2) + (4 * (y * y))) > 1)
+    """
+    def __init__(self):
+        self.parser = (ParseSExpr() >> (lambda n:
+                       ParseSymbol("<") >> (lambda _:
+                       ParseSExpr() >> (lambda m:
+                       Return(SmallerThan(n, m)))))) ^ \
+                            ParseSExpr() >> (lambda n:
+                            ParseSymbol(">") >> (lambda _:
+                            ParseSExpr() >> (lambda m:
+                            Return(BiggerThan(n, m)))))
+
+class ParseConj(Parser):
+    """
+    >>> res = result(ParseConj().parse("x < y*1 -2"))
+    >>> print(res)
+    (x < ((y * 1) - 2))
+    >>> res = result(ParseConj().parse("(x < 5 and y > 0)"))
+    >>> print(res)
+    ((x < 5) and (y > 0))
+    >>> res = result(ParseConj().parse("x > 1 and y<2 or y < 1"))
+    >>> print(res)
+    (x > 1)
+    """
+    def __init__(self):
+        self.parser = ParseConstr() ^ \
+                      (ParseSymbol("(") >> (lambda _:
+                      ParseBool() >> (lambda e:
+                      ParseSymbol(")") >> (lambda _:
+                      Return(e)))))
