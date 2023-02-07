@@ -250,7 +250,7 @@ class ParseSFactor(Parser):
                       ParseSymbol(")") >> (lambda _:
                       Return(e)))))
     
-    class ParseSTerm(Parser):
+class ParseSTerm(Parser):
     """
     >>> res = result(ParseSTerm().parse("x *2abc"))
     >>> print(res)
@@ -261,9 +261,9 @@ class ParseSFactor(Parser):
     """
     def __init__(self):
         self.parser = (ParseSFactor() >> (lambda n:
-                       ParseSymbol("*") >> (lambda _:
-                       ParseSTerm() >> (lambda m:
-                       Return(Times(n, m)))))) ^ ParseSFactor()
+                    ParseSymbol("*") >> (lambda _:
+                    ParseSTerm() >> (lambda m:
+                    Return(Times(n, m)))))) ^ ParseSFactor()
 
 class ParseSExpr(Parser):
     """
@@ -299,7 +299,7 @@ class ParseSExpr(Parser):
                                 ParseSExpr() >> (lambda m:
                                 Return(MyMinus(Con(0), m)))) ^ ParseSTerm()
     
-    class ParseEqu(Parser):
+class ParseEqu(Parser):
     """
     >>> ParseEqu().parse(" =y")
     []
@@ -367,3 +367,71 @@ class ParseConj(Parser):
                       ParseBool() >> (lambda e:
                       ParseSymbol(")") >> (lambda _:
                       Return(e)))))
+
+class ParseDisj(Parser):
+    """
+    >>> ParseDisj().parse("x or y < 0")
+    []
+    >>> ParseDisj().parse("x = 3 and y < 0")
+    []
+    >>> ParseDisj().parse("y <= 0")
+    []
+    >>> res = result(ParseDisj().parse("x*2 + 4 * y*y > 1 and y<2"))
+    >>> print(res)
+    ((((x * 2) + (4 * (y * y))) > 1) and (y < 2))
+    >>> res = result(ParseDisj().parse("x > 1 and y<2 or y < 1"))
+    >>> print(res)
+    ((x > 1) and (y < 2))
+    """
+    def __init__(self):
+        self.parser = (ParseConj() >> (lambda n:
+                       ParseSymbol("and") >> (lambda _:
+                       ParseDisj() >> (lambda m:
+                       Return(MyAnd(n, m)))))) ^ ParseConj()
+
+class ParseBool(Parser):
+    """
+    >>> ParseBool().parse("x or y < 0")
+    []
+    >>> ParseBool().parse("x = 3 and y < 0")
+    []
+    >>> ParseBool().parse("y <= 0")
+    []
+    >>> res = result(ParseBool().parse("x*2 + 4 * y*y > 1 and y<2"))
+    >>> print(res)
+    ((((x * 2) + (4 * (y * y))) > 1) and (y < 2))
+    >>> res = result(ParseBool().parse("x > 1 and y<2 or y < 1"))
+    >>> print(res)
+    (((x > 1) and (y < 2)) or (y < 1))
+    >>> res = result(ParseBool().parse("x > 1 and y<2 or ((y < 1 or y < 1) and y<2)"))
+    >>> print(res)
+    (((x > 1) and (y < 2)) or (((y < 1) or (y < 1)) and (y < 2)))
+    """
+    def __init__(self):
+        self.parser = (ParseDisj() >> (lambda n:
+                       ParseSymbol("or") >> (lambda _:
+                       ParseBool() >> (lambda m:
+                       Return(MyOr(n, m)))))) ^ ParseDisj()
+
+class ParseBoolSys(Parser):
+    def __init__(self):
+        self.parser = (ParseBool() >> (lambda n:
+                       ParseSymbol(",") >> (lambda _:
+                       ParseBoolSys() >> (lambda m:
+                       Return(Parser.consType(n, m, [MyOr, MyAnd, SmallerThan, BiggerThan])))))) ^ \
+                            ParseBool() >> (lambda n:
+                            Return([n]))
+            
+class ParseSys(Parser):
+    def __init__(self):
+        self.parser = (ParseSymbol("Solve") >> (lambda _:
+                       ParseEquSys() >> (lambda n:
+                       ParseSymbol("such ") >> (lambda _:
+                       ParseSymbol("that") >> (lambda _:
+                       ParseBoolSys() >> (lambda m:
+                       ParseString(".") >> (lambda _:
+                       Return([n, m])))))))) ^ \
+                            ParseSymbol("Solve") >> (lambda _:
+                            ParseEquSys() >> (lambda n:
+                            ParseString(".") >> (lambda _:
+                            Return([n, []]))))
