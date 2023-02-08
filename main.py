@@ -22,10 +22,10 @@ if __name__ == "__main__":
 
             # read from file and replace new lines
             data = file.read().replace('\n', ' ')
-
+            
             # parse input, return List[List, List]
             expr = result(ParseSys().parse(data))
-            
+
             # go through list of equasions and list of constraints
             # and add them to z3 solver
             for elem in expr:
@@ -35,5 +35,5 @@ if __name__ == "__main__":
 
             return return_sol(s)
     
-    res = solve("simple.txt")
-    print(res)
+    res = solve("test_files/simple.txt")
+    print("One solution is: ", res)

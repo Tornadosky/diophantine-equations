@@ -46,6 +46,9 @@ class Con(Expr):
 
     def ev(self, env={}):
         return self.val
+    
+    def toZ3(self):
+        return self.val
 
     def __str__(self):
         return str(self.val)
@@ -67,6 +70,10 @@ class MyVar(Expr):
 
     def ev(self, env={}):
         return env[self.name]
+    
+    # vars translate to Z3 integer variables.
+    def toZ3(self):
+        return Int(f"{self.name}")
 
     def __str__(self):
         return self.name
@@ -105,6 +112,9 @@ class MyPlus(BinOp):
     
     def op(self, x, y):
         return x + y
+    
+    def toZ3(self):
+        return self.left.toZ3() + self.right.toZ3()
 
 class MyMinus(BinOp):
 
@@ -113,12 +123,18 @@ class MyMinus(BinOp):
     def op(self, x, y):
         return x - y
     
+    def toZ3(self):
+        return self.left.toZ3() - self.right.toZ3()
+    
 class Times(BinOp):
 
     name = '*'
     
     def op(self, x, y):
         return x * y
+    
+    def toZ3(self):
+        return self.left.toZ3() * self.right.toZ3()
 
 class Equal(BinOp):
 
@@ -126,6 +142,9 @@ class Equal(BinOp):
     
     def op(self, x, y):
         return x == y
+    
+    def toZ3(self):
+        return self.left.toZ3() == self.right.toZ3()
 
 class MyAnd(BinOp):
 
@@ -133,6 +152,9 @@ class MyAnd(BinOp):
     
     def op(self, x, y):
         return x and y
+
+    def toZ3(self):
+        return z3.And(self.left.toZ3(), self.right.toZ3())
     
 class MyOr(BinOp):
 
@@ -140,6 +162,9 @@ class MyOr(BinOp):
     
     def op(self, x, y):
         return x or y
+    
+    def toZ3(self):
+        return z3.Or(self.left.toZ3(), self.right.toZ3())
 
 class SmallerThan(BinOp):
 
@@ -147,6 +172,9 @@ class SmallerThan(BinOp):
     
     def op(self, x, y):
         return x < y
+    
+    def toZ3(self):
+        return self.left.toZ3() < self.right.toZ3()
 
 class BiggerThan(BinOp):
 
@@ -154,3 +182,6 @@ class BiggerThan(BinOp):
     
     def op(self, x, y):
         return x > y
+    
+    def toZ3(self):
+        return self.left.toZ3() > self.right.toZ3()

@@ -1,5 +1,4 @@
 from symbolic import *
-import doctest
 
 result = lambda p: p[0][0]
 rest   = lambda p: p[0][1]
@@ -249,7 +248,7 @@ class ParseSFactor(Parser):
                       ParseSExpr() >> (lambda e:
                       ParseSymbol(")") >> (lambda _:
                       Return(e)))))
-    
+
 class ParseSTerm(Parser):
     """
     >>> res = result(ParseSTerm().parse("x *2abc"))
@@ -261,9 +260,9 @@ class ParseSTerm(Parser):
     """
     def __init__(self):
         self.parser = (ParseSFactor() >> (lambda n:
-                    ParseSymbol("*") >> (lambda _:
-                    ParseSTerm() >> (lambda m:
-                    Return(Times(n, m)))))) ^ ParseSFactor()
+                       ParseSymbol("*") >> (lambda _:
+                       ParseSTerm() >> (lambda m:
+                       Return(Times(n, m)))))) ^ ParseSFactor()
 
 class ParseSExpr(Parser):
     """
@@ -298,7 +297,7 @@ class ParseSExpr(Parser):
                                 ParseSymbol("-") >> (lambda _:
                                 ParseSExpr() >> (lambda m:
                                 Return(MyMinus(Con(0), m)))) ^ ParseSTerm()
-    
+
 class ParseEqu(Parser):
     """
     >>> ParseEqu().parse(" =y")
